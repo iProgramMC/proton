@@ -438,6 +438,7 @@ uint8 * zLibInflateToMemory(uint8 *pInput, unsigned int compressedSize, unsigned
 	ret = inflateInit(&strm);
 	if (ret != Z_OK)
 		return 0;
+	LogMsg("Decompressed size: %u", decompressedSize);
 	uint8 *pDestBuff = new uint8[decompressedSize+1]; //room for extra null at the end;
 	if (!pDestBuff)
 	{

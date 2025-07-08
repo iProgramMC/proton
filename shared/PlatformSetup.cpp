@@ -47,6 +47,8 @@ string PlatformIDAsString(ePlatformID platformID)
 	case PLATFORM_ID_WINDOWS_MOBILE: return "winmo";
 	case PLATFORM_ID_WEBOS: return "webos";
 	case PLATFORM_ID_BBX: return "bbx";
+	case PLATFORM_ID_PSVITA: return "psvita";
+	case PLATFORM_ID_WII: return "wii";
         default:;
 
 	}
@@ -66,6 +68,7 @@ ePlatformID PlatformStringAsID(string platform)
 	if (platform == "webos") return PLATFORM_ID_WEBOS;
 	if (platform == "bbx") return PLATFORM_ID_BBX;
 	if (platform == "linux") return PLATFORM_ID_LINUX;
+	if (platform == "wii") return PLATFORM_ID_WII;
 
 	return PLATFORM_ID_UNKNOWN;
 }
@@ -84,6 +87,7 @@ string PlatformIDAsStringDisplay(ePlatformID platformID)
 	case PLATFORM_ID_WINDOWS_MOBILE: return "WinMo";
 	case PLATFORM_ID_WEBOS: return "WebOS";
 	case PLATFORM_ID_BBX: return "BBX";
+	case PLATFORM_ID_WII: return "Wii";
         default:;
 	}
 	return "";

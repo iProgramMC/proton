@@ -71,10 +71,11 @@ bool App::Init()
 #endif
 #ifndef C_NO_ZLIB
 	//fonts need zlib to decompress.  When porting a new platform I define C_NO_ZLIB and add zlib support later sometimes
-	if (!GetFont(FONT_SMALL)->Load("interface/font_trajan.rtfont")) return false;
+	//if (!GetFont(FONT_SMALL)->Load("interface/font_trajan.rtfont")) return false;
 #endif
 
-	GetBaseApp()->SetFPSVisible(true);
+	//GetBaseApp()->SetFPSVisible(true);
+	GetBaseApp()->SetFPSVisible(false);
 	return true;
 }
 
@@ -402,13 +403,13 @@ void App::Draw()
 	m_surf.Blit(0, 0);
 	//m_surf.Blit(100, 100);
 
-	m_surf.BlitScaled(100, 200, CL_Vec2f(1,1), ALIGNMENT_CENTER, MAKE_RGBA(255,255,255,255), SinGamePulseByMS(3000)*360);
+	//m_surf.BlitScaled(100, 200, CL_Vec2f(1,1), ALIGNMENT_CENTER, MAKE_RGBA(255,255,255,255), SinGamePulseByMS(3000)*360);
 
-	m_surf.BlitRotated(400, 200, CL_Vec2f(0.2f,0.2f), ALIGNMENT_CENTER, MAKE_RGBA(255,255,255,255), SinGamePulseByMS(4000)*360,
-		CL_Vec2f(20,-20), NULL);
+	//m_surf.BlitRotated(400, 200, CL_Vec2f(0.2f,0.2f), ALIGNMENT_CENTER, MAKE_RGBA(255,255,255,255), SinGamePulseByMS(4000)*360,
+	//	CL_Vec2f(20,-20), NULL);
 
 	//GetFont(FONT_SMALL)->Draw(0,0, "test");
-	GetFont(FONT_SMALL)->DrawScaled(0,GetScreenSizeYf()-50, "white `2Green `3Cyan `4Red `5Purp ",1+SinGamePulseByMS(3000)*0.7f);
+	//GetFont(FONT_SMALL)->DrawScaled(0,GetScreenSizeYf()-50, "white `2Green `3Cyan `4Red `5Purp ",1+SinGamePulseByMS(3000)*0.7f);
 	
 	//the base handles actually drawing the GUI stuff over everything else, if applicable, which in this case it isn't.
 	BaseApp::Draw();

@@ -56,6 +56,10 @@
 #include "psp2/PlatformSetupPSP2.h"
 #endif
 
+#ifdef PLATFORM_WII
+#include "wii/PlatformSetupWii.h"
+#endif
+
 #if defined(__cplusplus) || defined(__OBJC__)
 	#include <cstdio>
 	#include <string>

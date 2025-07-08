@@ -428,7 +428,7 @@ m_blendingMode = BLENDING_PREMULTIPLIED_ALPHA;
  else
 			{
 
-#if defined(C_GL_MODE) || defined(RT_GLES_ADAPTOR_MODE) || defined(RT_USING_OSMESA)
+#if defined(C_GL_MODE) || defined(RT_GLES_ADAPTOR_MODE) || defined(RT_USING_OSMESA) || defined(PLATFORM_WII)
 
 			assert(!"You cannot use PVR compressed textures in GL mode!");
 #else
@@ -1004,7 +1004,12 @@ void Surface::CopyFromScreen()
 
 	Bind();
 	//glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, m_texWidth, m_texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,  pFinal );
+#ifdef PLATFORM_WII
+	assert(!"TODO, do we use this?!");
+	//glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, m_texWidth, m_texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,  pFinal );
+#else
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, m_texHeight-readY, readX, readY, GL_RGBA, GL_UNSIGNED_BYTE, pBuff);
+#endif
 	CHECK_GL_ERROR();
 	delete [] pBuff;
 }
@@ -1449,7 +1454,7 @@ bool Surface::InitFromSoftSurface( SoftSurface *pSurf, bool bCreateSurface, int 
 
 		memset(pPixelData,0, dataSize);
 	
-		#ifdef RT_GLES_ADAPTOR_MODE
+		#if defined RT_GLES_ADAPTOR_MODE || defined PLATFORM_WII
 			//do it the simpler way, for Flash
 			int yStart = 0;
 			bool bUpsideDownMode = true;
