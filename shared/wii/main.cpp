@@ -1,5 +1,6 @@
 // Copyright (C) 2025 iProgramInCpp
 #include "BaseApp.h"
+#include "util/PassThroughPointerEventHandler.h"
 
 #include <gccore.h>
 #include <wiiuse/wpad.h>
@@ -9,7 +10,7 @@
 #include <fat.h>
 #include <network.h>
 
-#include "util/PassThroughPointerEventHandler.h"
+#include "WiiRemote.h"
 
 // Cursor Image
 #include "cursor.h"
@@ -25,11 +26,6 @@ int g_winVideoScreenY = 480;
 extern RenderBatcher g_globalBatcher;
 
 PointerEventHandler *g_pPointerEventHandler;
-
-bool g_bRemoteValid = false;
-float g_remoteX = 0;
-float g_remoteY = 0;
-float g_remoteAngle = 0;
 
 int GetPrimaryGLX()
 {
@@ -116,83 +112,6 @@ void CheckMessages()
 	}
 }
 
-bool g_bWasClicking = false;
-
-void WiiRemoteUpdate(int channel)
-{
-	ir_t ir {};
-	WPAD_IR(channel, &ir);
-	
-	if (!ir.valid) {
-		g_bRemoteValid = false;
-		return;
-	}
-	
-	float oldX = g_remoteX;
-	float oldY = g_remoteY;
-	
-	g_bRemoteValid = true;
-	g_remoteX = ir.x;
-	g_remoteY = ir.y;
-	g_remoteAngle = ir.angle;
-	
-	// TODO this sucks
-	g_remoteX = std::min(std::max(g_remoteX * 720.0f / 640.0f, 0.0f), float(g_winVideoScreenX));
-	g_remoteY = std::min(std::max(g_remoteY * 528.0f / 480.0f, 0.0f), float(g_winVideoScreenY));
-	
-	ConvertCoordinatesIfRequired(g_remoteX, g_remoteY);
-	
-	u32 buttons = WPAD_ButtonsHeld(channel);
-	
-	if (buttons & WPAD_BUTTON_A)
-	{
-		if (g_bWasClicking) {
-			g_pPointerEventHandler->handlePointerMoveEvent(g_remoteX, g_remoteY, channel);
-		}
-		else {
-			g_pPointerEventHandler->handlePointerDownEvent(g_remoteX, g_remoteY, channel);
-			g_bWasClicking = true;
-		}
-	}
-	else
-	{
-		g_pPointerEventHandler->handlePointerUpEvent(g_remoteX, g_remoteY, channel);
-		g_bWasClicking = false;
-	}
-	
-}
-
-Surface g_cursorSurf;
-
-void WiiRemoteDraw()
-{
-	if (!g_bRemoteValid)
-		return;
-	
-	if (!g_cursorSurf.IsLoaded())
-		return;
-	
-	const int offsetX = 23;
-	const int offsetY = 8;
-	const float scale = 0.6f;
-	
-	float x = g_remoteX, y = g_remoteY;
-	
-	PrepareForGL();
-	g_cursorSurf.Bind();
-	g_cursorSurf.BlitRotated(
-		x - offsetX * scale,
-		y - offsetY * scale,
-		CL_Vec2f(scale, scale),
-		ALIGNMENT_UPPER_LEFT,
-		0xFFFFFFFF,
-		g_remoteAngle,
-		CL_Vec2f(offsetX, offsetY) * scale
-	);
-	
-	g_globalBatcher.Flush();
-}
-
 void LoadFileFromMemoryCompressed(Surface* surf, const uint8_t* data, size_t size)
 {
 	// I know we're not supposed to convert away from const but I
@@ -219,28 +138,21 @@ int main()
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	
 	g_pPointerEventHandler = new PassThroughPointerEventHandler();
+	LoadCursorResource();
 
 	if (!GetBaseApp()->Init()) exit(0);
 	
-	LoadFileFromMemoryCompressed(&g_cursorSurf, (uint8*)bin2c_cursor_rttex, sizeof(bin2c_cursor_rttex));
-	
 	while (true)
 	{
-		WPAD_ScanPads();
+		GetWiiRemote()->Update();
 		
-		u32 pressed = WPAD_ButtonsDown(0);
-		if (pressed & WPAD_BUTTON_HOME)
-			break;
-		
-		if (SYS_ResetButtonDown())
+		if (SYS_ResetButtonDown() || GetWiiRemote()->IsButtonPressed(WPAD_BUTTON_HOME))
 			break;
 		
         GetBaseApp()->Update();
 		GetBaseApp()->Draw();
 		
-		// Update Remote
-		WiiRemoteUpdate(0);
-		WiiRemoteDraw();
+		GetWiiRemote()->RenderCursor();
 		
 		glFinish();
 		
@@ -248,10 +160,8 @@ int main()
 
 		GX_CopyDisp(xfb, GX_TRUE);
 		VIDEO_SetNextFramebuffer(xfb);
-		
 		VIDEO_Flush();
 		VIDEO_WaitVSync();
-		
 	}
 	
 	delete g_pPointerEventHandler;

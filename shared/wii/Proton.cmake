@@ -44,7 +44,7 @@ include_directories("${PROTON_SHARED}")
 include_directories("${PROTON_UTIL}/boost")
 include_directories("${PROTON_SHARED}/ClanLib-2.0/Sources")
 
-set(PROTON_SOURCES_BASIC "${PROTON_SHARED}/BaseApp.cpp" "${PROTON_SHARED}/PlatformSetup.cpp" "${PROTON_SHARED}/wii/WiiUtils.cpp" "${PROTON_SHARED}/wii/main.cpp" "${PROTON_UTIL}/VideoModeSelector.cpp" "${PROTON_UTIL}/PassThroughPointerEventHandler.cpp" "${PROTON_UTIL}/TouchDeviceEmulatorPointerEventHandler.cpp"
+set(PROTON_SOURCES_BASIC "${PROTON_SHARED}/BaseApp.cpp" "${PROTON_SHARED}/PlatformSetup.cpp" "${PROTON_SHARED}/wii/WiiUtils.cpp" "${PROTON_SHARED}/wii/main.cpp" "${PROTON_SHARED}/wii/WiiRemote.cpp" "${PROTON_UTIL}/VideoModeSelector.cpp" "${PROTON_UTIL}/PassThroughPointerEventHandler.cpp" "${PROTON_UTIL}/TouchDeviceEmulatorPointerEventHandler.cpp"
 	"${PROTON_UTIL}/Variant.cpp" "${PROTON_SHARED}/Manager/VariantDB.cpp"
 	"${PROTON_AUDIO}/AudioManager.cpp"
 	"${PROTON_FILESYSTEM}/FileManager.cpp" "${PROTON_FILESYSTEM}/StreamingInstance.cpp" "${PROTON_FILESYSTEM}/StreamingInstanceFile.cpp"
