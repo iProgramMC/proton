@@ -844,16 +844,19 @@ void MemorySerialize( std::string &num, uint8 *pMem, int &offsetInOut, bool bWri
 		len = (uint16) num.length();
 
 		//copy how the len, up to 64k
+		FIXUPV(len);
 		memcpy(&pMem[offsetInOut], &len, sizeof(len));
 		offsetInOut += sizeof(len);
 
 		//now copy the actual content
+		FIXUPV(len);
 		memcpy(&pMem[offsetInOut], num.c_str(), len);
 	
 	} else
 	{
 		memcpy(&len, &pMem[offsetInOut], sizeof(len));
 		offsetInOut += sizeof(len);
+		FIXUPV(len);
 
 		num.resize(len);
 
@@ -878,10 +881,12 @@ void MemorySerializeStringEncrypted( std::string &num, uint8 *pMem, int &offsetI
 		len = (uint16) num.length();
 
 		//copy how the len, up to 64k
+		FIXUPV(len);
 		memcpy(&pMem[offsetInOut], &len, sizeof(len));
 		offsetInOut += sizeof(len);
 
 		//now copy the actual content, encrypted
+		FIXUPV(len);
 		for(int i=0;i<len;i++)
 		{
 			uint8 b=(uint8)num.c_str()[i];
@@ -895,6 +900,7 @@ void MemorySerializeStringEncrypted( std::string &num, uint8 *pMem, int &offsetI
 	{
 		memcpy(&len, &pMem[offsetInOut], sizeof(len));
 		offsetInOut += sizeof(len);
+		FIXUPV(len);
 
 		num.resize(len);
 
@@ -915,6 +921,7 @@ bool MemorySerializeStringLarge( std::string &num, uint8 *pMem, int &offsetInOut
 	if (bWriteToMem)
 	{
 		len = (uint32) num.length();
+		FIXUPV(len);
 
 		if (maxBytesInPacket != 0 && len > (maxBytesInPacket-4))
 		{
@@ -923,6 +930,7 @@ bool MemorySerializeStringLarge( std::string &num, uint8 *pMem, int &offsetInOut
 		}
 		memcpy(&pMem[offsetInOut], &len, sizeof(len));
 		offsetInOut += sizeof(len);
+		FIXUPV(len);
  
 		//now copy the actual content
 		memcpy(&pMem[offsetInOut], num.c_str(), len);
@@ -932,6 +940,7 @@ bool MemorySerializeStringLarge( std::string &num, uint8 *pMem, int &offsetInOut
 		memcpy(&len, &pMem[offsetInOut], sizeof(len));
 		offsetInOut += sizeof(len);
 
+		FIXUPV(len);
 		num.resize(len);
 
 		//trust me.

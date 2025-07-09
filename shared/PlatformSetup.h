@@ -74,6 +74,23 @@ To customReinterpretCast(const From& f)
     return x.to;
 }
 
+__attribute__((always_inline))
+static inline void swapBytes(uint8_t* data, size_t sz)
+{
+    for (size_t i = 0, j = sz - 1; i < j; i++, j--)
+    {
+        uint8_t temp = data[i];
+        data[i] = data[j];
+        data[j] = temp;
+    }
+}
+
+__attribute__((always_inline))
+static inline void swapBytes(char* data, size_t sz)
+{
+    swapBytes((uint8_t*) data, sz);
+}
+
 template<typename T>
 __attribute__((noinline))
 T byteSwap(const T& t)
@@ -113,24 +130,20 @@ T byteSwap(const T& t)
     else
     {
         T t2 = t;
-        uint8_t* p = (uint8_t*) &t2;
-        for (size_t i = 0, j = sizeof(t) - 1; i < j; i++, j--)
-        {
-            uint8_t temp = p[i];
-            p[i] = p[j];
-            p[j] = temp;
-        }
+        swapBytes((uint8_t*) &t2, sizeof(T));
         return t2;
     }
 }
 
 #define FIXUP(x) byteSwap(x)
 #define FIXUPV(v) do { v = byteSwap(v); } while (0)
+#define FIXUPBA(ba, sz) swapBytes(ba, sz)
 
 #else
 
 #define FIXUP(x) (x)
 #define FIXUPV(x) do { } while (0)
+#define FIXUPBA(ba, sz)
 
 #endif
 

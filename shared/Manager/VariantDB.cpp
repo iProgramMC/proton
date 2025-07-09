@@ -213,6 +213,7 @@ bool VariantDB::Load( const string &fileName, bool *pFileExistedOut, bool bAddBa
 	uint32 version;
 	if (pFileExistedOut) *pFileExistedOut = true;
 	size_t bytesRead = fread(&version, 1, sizeof(uint32), fp);
+	FIXUPV(version);
 
 	if (bytesRead == 0 || version != 1)
 	{
@@ -231,6 +232,7 @@ bool VariantDB::Load( const string &fileName, bool *pFileExistedOut, bool bAddBa
 	while (!feof(fp))
 	{
 		fread(&varType, 1, sizeof(uint32), fp);
+		FIXUPV(varType);
 
 		if (varType == Variant::TYPE_UNUSED)
 		{

@@ -374,6 +374,8 @@ bool Variant::Save( FILE *fp, const string &varName )
 	}
 
 	uint32 varType = GetType();
+	FIXUPV(varType);
+	
 	int bytesRead = (int)fwrite(&varType, 1, sizeof(uint32), fp);
 	if (bytesRead == 0) return false;
 
@@ -385,7 +387,9 @@ bool Variant::Save( FILE *fp, const string &varName )
 		SaveToFile(m_string, fp);
 	} else
 	{
+		FIXUPBA(m_var, dataSizeBytes);
 		fwrite(m_var, dataSizeBytes, 1, fp);
+		FIXUPBA(m_var, dataSizeBytes);
 	}
 
 	
@@ -488,7 +492,11 @@ uint8 * VariantList::SerializeToMem( uint32 *pSizeOut, uint8 *pDest )
 
 			
 			uint32 s = (int)m_variant[i].GetString().size();
+			
+			FIXUPV(s);
 			memcpy(pCur, &s, 4); pCur += 4; //length of string
+			FIXUPV(s);
+			
 			memcpy(pCur, m_variant[i].GetString().c_str(), s); pCur += s; //actual string data
 		} else
 		{
@@ -502,7 +510,9 @@ uint8 * VariantList::SerializeToMem( uint32 *pSizeOut, uint8 *pDest )
 				type = m_variant[i].GetType();
 				memcpy(pCur, &type, 1); pCur += 1; //type
 				
+				FIXUPBA(m_variant[i].m_var, tempSize);
 				memcpy(pCur, m_variant[i].m_var, tempSize); pCur += tempSize;
+				FIXUPBA(m_variant[i].m_var, tempSize);
 
 			}
 		}
@@ -544,6 +554,7 @@ bool VariantList::SerializeFromMem(uint8 *pSrc, int bufferSize, int *pBytesReadO
 			{
 				uint32 v;
 				memcpy(&v, pSrc, sizeof(uint32));
+				FIXUPV(v);
 				pSrc += sizeof(uint32);
 				m_variant[index].Set(v);
 				break;
@@ -552,6 +563,7 @@ bool VariantList::SerializeFromMem(uint8 *pSrc, int bufferSize, int *pBytesReadO
 			{
 				int32 v;
 				memcpy(&v, pSrc, sizeof(int32));
+				FIXUPV(v);
 				pSrc += sizeof(int32);
 				m_variant[index].Set(v);
 				break;
@@ -561,6 +573,7 @@ bool VariantList::SerializeFromMem(uint8 *pSrc, int bufferSize, int *pBytesReadO
 			{
 				float v;
 				memcpy(&v, pSrc, sizeof(float));
+				FIXUPV(v);
 				pSrc += sizeof(float);
 				m_variant[index].Set(v);
 				break;
@@ -570,6 +583,9 @@ bool VariantList::SerializeFromMem(uint8 *pSrc, int bufferSize, int *pBytesReadO
 			{
 				CL_Vec2f v;
 				memcpy(&v, pSrc, sizeof(CL_Vec2f));
+			#ifdef PLATFORM_WII
+				v = CL_Vec2f(FIXUP(v.x), FIXUP(v.y));
+			#endif
 				pSrc += sizeof(CL_Vec2f);
 				m_variant[index].Set(v);
 				break;
@@ -580,6 +596,9 @@ bool VariantList::SerializeFromMem(uint8 *pSrc, int bufferSize, int *pBytesReadO
 			{
 				CL_Vec3f v;
 				memcpy(&v, pSrc, sizeof(CL_Vec3f));
+			#ifdef PLATFORM_WII
+				v = CL_Vec3f(FIXUP(v.x), FIXUP(v.y), FIXUP(v.z));
+			#endif
 				pSrc += sizeof(CL_Vec3f);
 				m_variant[index].Set(v);
 				break;
@@ -589,6 +608,9 @@ bool VariantList::SerializeFromMem(uint8 *pSrc, int bufferSize, int *pBytesReadO
 			{
 				CL_Rectf v;
 				memcpy(&v, pSrc, sizeof(CL_Rectf));
+			#ifdef PLATFORM_WII
+				v = CL_Rectf(FIXUP(v.left), FIXUP(v.top), FIXUP(v.right), FIXUP(v.bottom));
+			#endif
 				pSrc += sizeof(CL_Rectf);
 				m_variant[index].Set(v);
 				break;

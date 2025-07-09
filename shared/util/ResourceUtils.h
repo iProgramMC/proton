@@ -82,6 +82,19 @@ bool StringFromEndMatches(const std::string &line, const std::string textToMatch
 template <class myType>
 void MemorySerialize( myType &num, uint8 *pMem, int &offsetInOut, bool bWriteToMem)
 {
+#ifdef PLATFORM_WII
+	if (bWriteToMem)
+	{
+		myType numCopy = byteSwap(num);
+		memcpy(&pMem[offsetInOut], &num, sizeof(myType));
+	}
+	else
+	{
+		myType output;
+		memcpy(&output, &pMem[offsetInOut], sizeof(myType));
+		num = byteSwap(output);
+	}
+#else
 	if (bWriteToMem)
 	{
 		memcpy(&pMem[offsetInOut], &num, sizeof(myType));
@@ -89,9 +102,9 @@ void MemorySerialize( myType &num, uint8 *pMem, int &offsetInOut, bool bWriteToM
 	{
 		memcpy(&num, &pMem[offsetInOut], sizeof(myType));
 	}
+#endif
 
 	offsetInOut += sizeof(myType);
-
 }
 
 //specialized version, not done as a template for compatibility with older compilers
