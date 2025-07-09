@@ -1045,6 +1045,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	else if (internalFormat == GL_RGB4)  internalFormat = GL_RGB;
 	else if (internalFormat == GL_RGB5)  internalFormat = GL_RGB;
 	else if (internalFormat == GL_RGB8)  internalFormat = GL_RGB;
+	else if (internalFormat == GL_RGBA8) internalFormat = GL_RGBA;
 	else if (internalFormat == 3)        internalFormat = GL_RGB;
 	else if (internalFormat == 4)        internalFormat = GL_RGBA;
 

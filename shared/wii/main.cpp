@@ -10,6 +10,9 @@
 
 #include "util/PassThroughPointerEventHandler.h"
 
+// Cursor Image
+#include "cursor.h"
+
 #define DEFAULT_FIFO_SIZE 256 * 1024
 
 #define HASPECT 			320
@@ -23,8 +26,9 @@ extern RenderBatcher g_globalBatcher;
 PointerEventHandler *g_pPointerEventHandler;
 
 bool g_bRemoteValid = false;
-int g_remoteX = 0;
-int g_remoteY = 0;
+float g_remoteX = 0;
+float g_remoteY = 0;
+float g_remoteAngle = 0;
 
 int GetPrimaryGLX()
 {
@@ -126,6 +130,8 @@ void WiiRemoteUpdate(int channel)
 	g_bRemoteValid = true;
 	g_remoteX = ir.x;
 	g_remoteY = ir.y;
+	g_remoteAngle = ir.angle;
+	ConvertCoordinatesIfRequired(g_remoteX, g_remoteY);
 	
 	u32 buttons = WPAD_ButtonsHeld(channel);
 	
@@ -157,13 +163,29 @@ void WiiRemoteDraw()
 	if (!g_cursorSurf.IsLoaded())
 		return;
 	
-	// TODO: The cursor texture is corrupted and I don't know why.
-	// Seems to always happen with RTSimpleApp for some reason
+	const int offsetX = 23;
+	const int offsetY = 8;
+	
+	float x = g_remoteX, y = g_remoteY;
+	
 	PrepareForGL();
 	g_cursorSurf.Bind();
-	g_cursorSurf.Blit(g_remoteX, g_remoteY, 0xFFFFFFFF, 0.0f, CL_Vec2f());
+	g_cursorSurf.BlitRotated(x - offsetX, y - offsetY, CL_Vec2f(1, 1), ALIGNMENT_UPPER_LEFT, 0xFFFFFFFF, g_remoteAngle, CL_Vec2f(offsetX, offsetY));
 	
 	g_globalBatcher.Flush();
+}
+
+void LoadFileFromMemoryCompressed(Surface* surf, const uint8_t* data, size_t size)
+{
+	// I know we're not supposed to convert away from const but I
+	// doubt Proton writes to this thing
+	unsigned int decompressedSize;
+	uint8 *pDecompressedData = DecompressRTPackToMemory((uint8*)data, &decompressedSize);
+	if (!pDecompressedData)
+		return;
+	
+	surf->LoadFileFromMemory(pDecompressedData, decompressedSize);
+	delete[] pDecompressedData;
 }
 
 int main()
@@ -182,7 +204,7 @@ int main()
 
 	if (!GetBaseApp()->Init()) exit(0);
 	
-	g_cursorSurf.LoadFile("interface/checkbox.rttex");
+	LoadFileFromMemoryCompressed(&g_cursorSurf, (uint8*)bin2c_cursor_rttex, sizeof(bin2c_cursor_rttex));
 	
 	while (true)
 	{
