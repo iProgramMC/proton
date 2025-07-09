@@ -39,11 +39,22 @@ void WiiRemote::LoadResource()
 
 void WiiRemote::Update()
 {
+	WPAD_ScanPads();
+	
 	ir_t ir {};
 	WPAD_IR(m_channel, &ir);
 	
 	m_bIsValid = ir.valid;
-	if (!m_bIsValid) return;
+	if (!m_bIsValid)
+	{
+		if (m_bWasClicking)
+		{
+			g_pPointerEventHandler->handlePointerUpEvent(int(m_position.x), int(m_position.y), m_channel);
+			m_bWasClicking = false;
+		}
+		
+		return;
+	}
 	
 	float x = std::min(std::max(ir.x * 720.0f / 640.0f, 0.0f), float(GetPrimaryGLX()));
 	float y = std::min(std::max(ir.y * 528.0f / 480.0f, 0.0f), float(GetPrimaryGLY()));
@@ -51,7 +62,6 @@ void WiiRemote::Update()
 	
 	m_position = CL_Vec2f(x, y);
 	
-	WPAD_ScanPads();
 	m_buttonsHeld = WPAD_ButtonsHeld(m_channel);
 	m_buttonsDown = WPAD_ButtonsDown(m_channel);
 	m_buttonsUp   = WPAD_ButtonsUp(m_channel);
