@@ -73,10 +73,15 @@ bool Surface::LoadBMPTexture(uint8 *pMem)
 {
 	
 	BMPImageHeader *pBmpImageInfo = new BMPImageHeader;
-	memcpy(pBmpImageInfo, &pMem[14], sizeof(BMPImageHeader)-14);
+	memcpy(pBmpImageInfo, &pMem[14], sizeof(BMPImageHeader)-14); // BUGBUG: Some fields arent copied or initialized?!
+	
+	FixupBMHeader(pBmpImageInfo);
+	
 	unsigned short offsetToImageData;
 	
 	memcpy(&offsetToImageData, &pMem[10], 2);
+	FIXUPV(offsetToImageData);
+	
 	uint8 *pPixelData = &pMem[offsetToImageData];
 	
 #ifdef _DEBUG
@@ -207,6 +212,10 @@ void Surface::PrepareGLForNewTexture()
 	#define GL_UNSIGNED_SHORT_4_4_4_4         0x8033
 #endif
 
+// IPROGRAM: Specifically for this function Seth decided to implement this.
+// Well, okay, but I have a solution from earlier called FixupRTTexHeader so
+// I'll leave this intact (even though the ints are byteswapped) and call
+// fixup on the header.
 int GetIntFromMemImplementation(uint8 *pMem)
 {
 	int temp;
@@ -288,6 +297,13 @@ bool Surface::LoadRTTexture(uint8 *pMem)
 {
 	CHECK_GL_ERROR();
 	rttex_header *pTexHeader = (rttex_header*)pMem;
+	
+#ifdef PLATFORM_WII
+	rttex_header copy = *pTexHeader;
+	FixupRTTexHeader(&copy);
+	pTexHeader = &copy;
+#endif
+	
 	rttex_mip_header *pMipSection;
 
 	m_texWidth = pTexHeader->width;
@@ -310,8 +326,8 @@ bool Surface::LoadRTTexture(uint8 *pMem)
 
 	if (m_bCreateMipMapsIfNeeded)
 	{
-		/* VitaGL does not support GL_GENERATE_MIPMAP */
-#ifndef PLATFORM_PSP2
+		/* VitaGL does not support GL_GENERATE_MIPMAP. I'm going to guess the Wii doesn't either */
+#if !defined(PLATFORM_PSP2) && !defined(PLATFORM_WII)
 		if (m_mipMapCount == 1)
 		{
 			m_mipMapCount = 8; //guess, exact # doesn't matter, just must be more than 1
@@ -326,6 +342,13 @@ CHECK_GL_ERROR();
 	for (int nMipLevel=0; nMipLevel < pTexHeader->mipmapCount; nMipLevel++)
 	{
 		pMipSection = (rttex_mip_header*)pCurPos;
+		
+	#ifdef PLATFORM_WII
+		rttex_mip_header copyMip = *pMipSection;
+		pMipSection = &copyMip;
+		FixupRTTexMipHeader(pMipSection);
+	#endif
+		
 		pCurPos += sizeof(rttex_mip_header);
 		uint8 *pTextureData =  pCurPos ;
 		memUsed += pMipSection->dataSize;
@@ -347,7 +370,7 @@ CHECK_GL_ERROR();
 
 		if (format == RT_FORMAT_EMBEDDED_FILE)
 		{
-			if (*((uint16*)pTextureData) != C_JPG_HEADER_MARKER)
+			if (FIXUP(*((uint16*)pTextureData)) != C_JPG_HEADER_MARKER)
 			{
 				//if it's "embedded", but not jpg, let's assume it is raw RGB,.. this way I don't have to use jpg for all the tiny mipmaps.  
 				//I may want to put the format in rttex_mip_header to allow more flexibility though..
@@ -456,7 +479,7 @@ m_blendingMode = BLENDING_PREMULTIPLIED_ALPHA;
 
 	IncreaseMemCounter(memUsed);
 	SetTextureStates();
-#if !defined(PLATFORM_HTML5) || !defined(PLATFORM_PSP2)
+#if defined(PLATFORM_HTML5) || defined(PLATFORM_PSP2) || defined(PLATFORM_WII)
 	//unknown parm in emscripten's emulated GL1 support
 #else
 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
@@ -506,7 +529,7 @@ bool Surface::LoadFileFromMemory(uint8 *pMem, int inputSize)
 	uint8 png_signature[8] = { 137, 80, 78, 71, 13, 10, 26, 10 };
 
 
-	if (*((uint16*)pMem) == C_JPG_HEADER_MARKER || memcmp(pMem, png_signature, 8) == 0)
+	if (FIXUP(*((uint16*)pMem)) == C_JPG_HEADER_MARKER || memcmp(pMem, png_signature, 8) == 0)
 	{
 		SoftSurface s;
 		if (!s.LoadFileFromMemory(pMem, SoftSurface::COLOR_KEY_NONE, inputSize, false))

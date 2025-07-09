@@ -60,5 +60,19 @@ public:
 
 typedef std::deque<FontState> FontStateStack;
 
+#ifdef PLATFORM_WII
+
+// ResourceUtils.cpp
+void FixupRTFontHeader(rtfont_header* header);
+void FixupRTFontCharData(rtfont_charData* header);
+void FixupKerningPair(KerningPair* kp);
+
+#else
+
+#define FixupRTFontHeader(h)
+#define FixupRTFontCharData(h)
+#define FixupKerningPair(h)
+
+#endif
 
 #endif // RTFontFileFormat_h__

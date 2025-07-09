@@ -10,6 +10,10 @@
 #include "html5/HTML5Utils.h"
 #endif
 
+#ifdef PLATFORM_WII
+#include "Renderer/bitmap.h"
+#endif
+
 bool IsPowerOf2(int n) { return (!(n & (n - 1))); }
 
 bool SaveToFile(const string &str, FILE *fp)
@@ -17,13 +21,16 @@ bool SaveToFile(const string &str, FILE *fp)
 
 #ifdef RT_FORCE_32BIT_INTS_FOR_FILES
 	int32 size = (int32)str.size();
+	FIXUPV(size);
 	fwrite(&size, sizeof(int32), 1, fp);
 
 #else
 	int size = (int)str.size();
+	FIXUPV(size);
 	fwrite(&size, sizeof(int), 1, fp);
 
 #endif
+	FIXUPV(size);
 	
 	if (size> 0)
 	{
@@ -38,10 +45,12 @@ bool LoadFromFile(string &str, FILE *fp)
 #ifdef RT_FORCE_32BIT_INTS_FOR_FILES
 	int32 size;
 	fread(&size, sizeof(int32), 1, fp);
+	FIXUPV(size);
 
 #else
 	int size;
 	fread(&size, sizeof(int), 1, fp);
+	FIXUPV(size);
 #endif
 
 	if (size > 0)
@@ -61,6 +70,7 @@ bool LoadFromFile(string &str, FILE *fp)
 
 bool SaveToFile(int32 num, FILE *fp)
 {
+	FIXUPV(num);
 	fwrite(&num, sizeof(int32), 1, fp);
 	return true;
 }
@@ -71,6 +81,7 @@ bool SaveToFile(int num, FILE *fp)
 {
 	//assert(!"Did you mean to pass in int32?  This is unsafe if you're loading/saving things as int, because of 32/64 bit issues");
 
+	FIXUPV(num);
 	fwrite(&num, sizeof(int), 1, fp);
 	return true;
 }
@@ -82,12 +93,14 @@ bool SaveToFile(int num, FILE *fp)
 
 bool SaveToFile(uint32 num, FILE *fp)
 {
+	FIXUPV(num);
 	fwrite(&num, sizeof(uint32), 1, fp);
 	return true;
 }
 
 bool SaveToFile(float num, FILE *fp)
 {
+	FIXUPV(num);
 	fwrite(&num, sizeof(float), 1, fp);
 	return true;
 }
@@ -95,12 +108,14 @@ bool SaveToFile(float num, FILE *fp)
 bool LoadFromFile(int32 &num, FILE *fp)
 {
 	fread(&num, sizeof(int32), 1, fp);
+	FIXUPV(num);
 	return true;
 }
 
 bool LoadFromFile(float &num, FILE *fp)
 {
 	fread(&num, sizeof(float), 1, fp);
+	FIXUPV(num);
 	return true;
 }
 
@@ -112,6 +127,7 @@ bool LoadFromFile(bool &num, FILE *fp)
 bool LoadFromFile(uint32 &num, FILE *fp)
 {
 	fread(&num, sizeof(uint32), 1, fp);
+	FIXUPV(num);
 	return true;
 }
 
@@ -119,18 +135,27 @@ bool LoadFromFile(uint32 &num, FILE *fp)
 bool LoadFromFile(CL_Vec2f &num, FILE *fp)
 {
 	fread(&num, sizeof(CL_Vec2f), 1, fp);
+	FIXUPV(num.x);
+	FIXUPV(num.y);
 	return true;
 }
 
 bool LoadFromFile(CL_Vec3f &num, FILE *fp)
 {
 	fread(&num, sizeof(CL_Vec3f), 1, fp);
+	FIXUPV(num.x);
+	FIXUPV(num.y);
+	FIXUPV(num.z);
 	return true;
 }
 
 bool LoadFromFile(CL_Rectf &num, FILE *fp)
 {
 	fread(&num, sizeof(CL_Rectf), 1, fp);
+	FIXUPV(num.left);
+	FIXUPV(num.top);
+	FIXUPV(num.right);
+	FIXUPV(num.bottom);
 	return true;
 }
 #endif
@@ -178,6 +203,84 @@ bool FileExistsRaw(const string &fName)
 
 }
 
+#ifdef PLATFORM_WII
+
+void FixupRTPackHeader(rtpack_header* header)
+{
+	FIXUPV(header->compressedSize);
+	FIXUPV(header->decompressedSize);
+}
+
+void FixupRTTexHeader(rttex_header* header)
+{
+	FIXUPV(header->height);
+	FIXUPV(header->width);
+	FIXUPV(header->format);
+	FIXUPV(header->originalHeight);
+	FIXUPV(header->originalWidth);
+	FIXUPV(header->mipmapCount);
+}
+
+void FixupRTTexMipHeader(rttex_mip_header* header)
+{
+	FIXUPV(header->height);
+	FIXUPV(header->width);
+	FIXUPV(header->dataSize);
+	FIXUPV(header->mipLevel);
+}
+
+void FixupBMHeader(BMPImageHeader* header)
+{
+	FIXUPV(header->Size);
+	FIXUPV(header->Width);
+	FIXUPV(header->Height);
+	FIXUPV(header->Planes);
+	FIXUPV(header->BitCount);
+	FIXUPV(header->Compression);
+	FIXUPV(header->ImageSize);
+	FIXUPV(header->XPixels);
+	FIXUPV(header->YPixels);
+	FIXUPV(header->ColorsUsed);
+	FIXUPV(header->ColorsImportant);
+}
+
+void FixupRTFontHeader(rtfont_header* header)
+{
+	FIXUPV(header->charSpacing);
+	FIXUPV(header->lineHeight);
+	FIXUPV(header->lineSpacing);
+	FIXUPV(header->shadowXOffset);
+	FIXUPV(header->shadowYOffset);
+	FIXUPV(header->firstChar);
+	FIXUPV(header->lastChar);
+	FIXUPV(header->blankCharWidth);
+	FIXUPV(header->fontStateCount);
+	FIXUPV(header->kerningPairCount);
+}
+
+void FixupRTFontCharData(rtfont_charData* header)
+{
+	FIXUPV(header->bmpPosX);
+	FIXUPV(header->bmpPosY);
+	FIXUPV(header->charSizeX);
+	FIXUPV(header->charSizeY);
+	FIXUPV(header->charBmpOffsetX);
+	FIXUPV(header->charBmpOffsetY);
+	FIXUPV(header->charBmpPosU);
+	FIXUPV(header->charBmpPosV);
+	FIXUPV(header->charBmpPosU2);
+	FIXUPV(header->charBmpPosV2);
+	FIXUPV(header->xadvance);
+}
+
+void FixupKerningPair(KerningPair* kp)
+{
+	FIXUPV(kp->first);
+	FIXUPV(kp->second);
+}
+
+#endif
+
 //up to you to use SAFE_DELETE_ARRAY
 uint8 * DecompressRTPackToMemory(uint8 *pMem, unsigned int *pDecompressedSize)
 {
@@ -190,6 +293,8 @@ return NULL;
 
 #else
 	rtpack_header *pHeader = (rtpack_header*)pMem;
+	FixupRTPackHeader(pHeader);
+
 	uint8 *pDeCompressed = zLibInflateToMemory( pMem+sizeof(rtpack_header), pHeader->compressedSize, pHeader->decompressedSize);
 	*pDecompressedSize = pHeader->decompressedSize;
 	return pDeCompressed;
@@ -438,7 +543,6 @@ uint8 * zLibInflateToMemory(uint8 *pInput, unsigned int compressedSize, unsigned
 	ret = inflateInit(&strm);
 	if (ret != Z_OK)
 		return 0;
-	LogMsg("Decompressed size: %u", decompressedSize);
 	uint8 *pDestBuff = new uint8[decompressedSize+1]; //room for extra null at the end;
 	if (!pDestBuff)
 	{

@@ -58,5 +58,15 @@ typedef struct BMPImageHeaderWithBitfields
 
 } BMPImageHeaderWithBitfields;
 
+#ifdef PLATFORM_WII
+
+void FixupBMHeader(BMPImageHeader* header); // ResourceUtils.cpp
+
+#else
+
+#define FixupBMHeader(h)
+
+#endif
+
 
 #endif // bitmap_h__

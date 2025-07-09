@@ -1325,6 +1325,13 @@ bool SoftSurface::LoadBMPTexture(uint8 *pMem)
 bool SoftSurface::LoadRTTexture(uint8 *pMem)
 {
 	rttex_header *pTexHeader = (rttex_header*)pMem;
+	
+#ifdef PLATFORM_WII
+	rttex_header copy = *pTexHeader;
+	pTexHeader = &copy;
+	FixupRTTexHeader(pTexHeader);
+#endif
+	
 	rttex_mip_header *pMipSection;
 
 	m_width = pTexHeader->width;
@@ -1341,6 +1348,13 @@ bool SoftSurface::LoadRTTexture(uint8 *pMem)
 
 
 	pMipSection = (rttex_mip_header*)pCurPos;
+	
+#ifdef PLATFORM_WII
+	rttex_mip_header mipCopy = *pMipSection;
+	pMipSection = &mipCopy;
+	FixupRTTexMipHeader(pMipSection);
+#endif
+	
 	pCurPos += sizeof(rttex_mip_header);
 	uint8 *pTextureData =  (uint8*)pCurPos ;
 
@@ -1406,7 +1420,7 @@ bool SoftSurface::LoadFileFromMemory( uint8 *pMem, eColorKeyType colorKey, int i
 	Kill();
 	SetColorKeyType(colorKey);
 
-	if (*((uint16*)pMem) == C_JPG_HEADER_MARKER)
+	if (FIXUP(*((uint16*)pMem)) == C_JPG_HEADER_MARKER)
 	{
 		//it's a jpg file.  Do we have the proper encoder?
 #if defined(RT_JPG_SUPPORT)

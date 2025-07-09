@@ -11,6 +11,20 @@
 	bool LoadFromFile(CL_Rectf &num, FILE *fp);
 #endif
 
+#ifdef PLATFORM_WII
+
+void FixupRTPackHeader(rtpack_header* header);
+void FixupRTTexHeader(rttex_header* header);
+void FixupRTTexMipHeader(rttex_mip_header* header);
+
+#else
+
+#define FixupRTPackHeader(h)
+#define FixupRTTexHeader(h)
+#define FixupRTTexMipHeader(h)
+
+#endif
+
 //NOTE: Use must SAFE_DELETE_ARRAY() the return from this..
 uint8 * LoadFileIntoMemory(std::string fileName, unsigned int *p_ui_size, bool bUseSavePath = false); //automatically decompresses if needed
 uint8 * LoadFileIntoMemoryBasic(std::string fileName, unsigned int *length, bool bUseSavePath = false, bool bAddBasePath = true); //won't try to automatically decompress

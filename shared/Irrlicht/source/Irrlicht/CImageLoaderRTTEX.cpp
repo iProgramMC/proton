@@ -62,6 +62,7 @@ namespace irr
 			}
 
 			rttex_header *pTexHeader = (rttex_header*)pBuff;
+			FixupRTTexHeader(pTexHeader);
 
 			//we're not really going to do anything with the data yet, just pass it in and hope the CImage doesn't really
 			//think it's valid RGBA data.  Later when the device dependent surface is made we'll do the real work

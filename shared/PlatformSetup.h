@@ -60,6 +60,80 @@
 #include "wii/PlatformSetupWii.h"
 #endif
 
+#ifdef PLATFORM_WII
+
+template<typename To, typename From>
+To customReinterpretCast(const From& f)
+{
+    union {
+        To to;
+        From from;
+    } x;
+
+    x.from = f;
+    return x.to;
+}
+
+template<typename T>
+__attribute__((noinline))
+T byteSwap(const T& t)
+{
+    if constexpr (sizeof(t) == 1)
+    {
+        return t;
+    }
+    else if constexpr (sizeof(t) == 2)
+    {
+        uint16_t x = customReinterpretCast<uint16_t, T>(t);
+        x = (x >> 8) | (x << 8);
+        return customReinterpretCast<T, uint16_t>(x);
+    }
+    else if constexpr (sizeof(t) == 4)
+    {
+        uint32_t x = customReinterpretCast<uint32_t, T>(t);
+        x = (x >> 24) |
+            (x << 24) |
+            ((x << 8) & 0x00FF0000) |
+            ((x >> 8) & 0x0000FF00);
+        return customReinterpretCast<T, uint32_t>(x);
+    }
+    else if constexpr (sizeof(t) == 8)
+    {
+        uint64_t x = customReinterpretCast<uint64_t, T>(t);
+        x = (x >> 56) |
+            (x << 56) |
+            ((x >> 40) & 0x000000000000FF00ULL) |
+            ((x >> 24) & 0x0000000000FF0000ULL) |
+            ((x >>  8) & 0x00000000FF000000ULL) |
+            ((x <<  8) & 0x000000FF00000000ULL) |
+            ((x << 24) & 0x0000FF0000000000ULL) |
+            ((x << 40) & 0x00FF000000000000ULL);
+        return customReinterpretCast<T, uint64_t>(x);
+    }
+    else
+    {
+        T t2 = t;
+        uint8_t* p = (uint8_t*) &t2;
+        for (size_t i = 0, j = sizeof(t) - 1; i < j; i++, j--)
+        {
+            uint8_t temp = p[i];
+            p[i] = p[j];
+            p[j] = temp;
+        }
+        return t2;
+    }
+}
+
+#define FIXUP(x) byteSwap(x)
+#define FIXUPV(v) do { v = byteSwap(v); } while (0)
+
+#else
+
+#define FIXUP(x) (x)
+#define FIXUPV(x) do { } while (0)
+
+#endif
+
 #if defined(__cplusplus) || defined(__OBJC__)
 	#include <cstdio>
 	#include <string>

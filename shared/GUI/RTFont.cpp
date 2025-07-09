@@ -42,7 +42,15 @@ return;
 
 	FileInstance f(m_fileName);
 	if (!f.IsLoaded()) return;
+	
 	rtfont_header *pHeader = (rtfont_header*)f.GetAsBytes();
+	
+#ifdef PLATFORM_WII
+	rtfont_header headerCopy;
+	memcpy(&headerCopy, pHeader, sizeof(headerCopy));
+	FixupRTFontHeader(&headerCopy);
+	pHeader = &headerCopy;
+#endif
 	
 	//skip pas the stuff we don't care about, we're just trying to get to the bitmap image itself
 	int charCount =  pHeader->lastChar - pHeader->firstChar;
@@ -79,6 +87,12 @@ bool RTFont::Load( string fileName, bool bAddBasePath)
 	}
 
 	m_fileName = fileName; //remember this for later
+	
+#ifdef PLATFORM_WII
+	rtfont_header copy = *pHeader;
+	FixupRTFontHeader(&copy);
+	pHeader = &copy;
+#endif
 
 	memcpy(&m_header, pHeader, sizeof(rtfont_header));
 	int charCount =  pHeader->lastChar - pHeader->firstChar;
@@ -87,12 +101,12 @@ bool RTFont::Load( string fileName, bool bAddBasePath)
 	m_chars.reserve(charCount);
 	
 	rtfont_charData *pSrcChar = (rtfont_charData*) (f.GetAsBytes()+sizeof(rtfont_header) );
-
 	FontChar fchar;
 	
 	for (int i=0; i < charCount; i++)
 	{
 		memcpy(&fchar.data, pSrcChar, sizeof(rtfont_charData));
+		FixupRTFontCharData(&fchar.data);
 		m_chars.push_back(fchar);
 		pSrcChar += 1;
 	}
@@ -103,6 +117,7 @@ bool RTFont::Load( string fileName, bool bAddBasePath)
 	for (int i=0; i < pHeader->kerningPairCount; i++)
 	{
 		memcpy(&k, pSrcBytes, sizeof(KerningPair));
+		FixupKerningPair(&k);
 		SetKerningData(k.first, k.second, k.amount);
 		
 		pSrcBytes += sizeof(KerningPair);
@@ -113,7 +128,7 @@ bool RTFont::Load( string fileName, bool bAddBasePath)
 	{
 		for (int i=0; i < m_header.fontStateCount; i++)
 		{
-			FontState fntState(  pSrcBytes[4],  *(unsigned int*)pSrcBytes);
+			FontState fntState(  pSrcBytes[4],  FIXUP(*(unsigned int*)pSrcBytes));
 			m_fontStates.push_back(fntState);
 			pSrcBytes += 8;
 		}

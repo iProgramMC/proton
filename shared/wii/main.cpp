@@ -24,8 +24,7 @@ int GetPrimaryGLY()
 	return g_winVideoScreenY;
 }
 
-static void *xfb[2] = { nullptr, nullptr };
-static int fba = 0;
+static void *xfb = nullptr;
 static GXRModeObj *vmode = nullptr;
 static char gp_fifo[DEFAULT_FIFO_SIZE] __attribute__((aligned(32)));
 
@@ -66,23 +65,12 @@ void InitializeVideo()
     VIDEO_Init();
 
     vmode = VIDEO_GetPreferredMode(nullptr);
-    xfb[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
-    xfb[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
+    xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 	
-	LogMsg("xfb0: %p  xfb1: %p  vmode: %p  &xfb: %p", xfb[0], xfb[1], vmode, &xfb);
-	
-	char *stuff = (char*) malloc(10000);
-	LogMsg("Stuff: %p", stuff);
-	free(stuff);
-	
-	extern void* g_audioManager[];
-	LogMsg("AudioManager: %p,  Vtable: %p", g_audioManager, g_audioManager[0]);
-
     VIDEO_Configure(vmode);
 	
-	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
+	VIDEO_ClearFrameBuffer(vmode, xfb, COLOR_BLACK);
     VIDEO_SetNextFramebuffer(xfb);
-	fba = 1;
 	
     VIDEO_SetBlack(FALSE);
     VIDEO_Flush();
@@ -132,14 +120,16 @@ int main()
 		if (pressed & WPAD_BUTTON_HOME)
 			break;
 		
+		if (SYS_ResetButtonDown())
+			break;
+		
         GetBaseApp()->Update();
 		GetBaseApp()->Draw();
 		
 		CheckMessages();
 
-		GX_CopyDisp(xfb[fba], GX_TRUE);
-		VIDEO_SetNextFramebuffer(xfb[fba ^ 1]);
-		fba ^= 1;
+		GX_CopyDisp(xfb, GX_TRUE);
+		VIDEO_SetNextFramebuffer(xfb);
 		
 		VIDEO_Flush();
 		VIDEO_WaitVSync();
