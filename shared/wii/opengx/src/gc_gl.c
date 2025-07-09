@@ -398,8 +398,8 @@ void glEnable( GLenum cap ) {  // TODO
 		glparamstate.dirty.bits.dirty_lighting = 1;
 		break;
 	case GL_SCISSOR_TEST:
-		glparamstate.scissoring_enabled = 1;
-		GX_SetScissor(glparamstate.scissor_x, glparamstate.scissor_y, glparamstate.scissor_width, glparamstate.scissor_height);
+		//glparamstate.scissoring_enabled = 1;
+		//GX_SetScissor(glparamstate.scissor_x, glparamstate.scissor_y, glparamstate.scissor_width, glparamstate.scissor_height);
 		break;
 	default: break;
 	}
@@ -432,8 +432,8 @@ void glDisable( GLenum cap ) {  // TODO
 		glparamstate.dirty.bits.dirty_lighting = 1;
 		break;
 	case GL_SCISSOR_TEST:
-		glparamstate.scissoring_enabled = 0;
-		GX_SetScissor(glparamstate.viewport_x, glparamstate.viewport_y, glparamstate.viewport_width, glparamstate.viewport_height);
+		//glparamstate.scissoring_enabled = 0;
+		//GX_SetScissor(glparamstate.viewport_x, glparamstate.viewport_y, glparamstate.viewport_width, glparamstate.viewport_height);
 		break;
 	default: break;
 	}
@@ -596,13 +596,14 @@ void glViewport( GLint x, GLint y, GLsizei width, GLsizei height ) {
 	
 	GX_SetViewport (x, y, width, height, 0.0f, 1.0f);
 	
-	if (glparamstate.scissoring_enabled)
+	//if (glparamstate.scissoring_enabled)
 		GX_SetScissor (x,y, width, height);
-	else
-		GX_SetScissor(glparamstate.scissor_x, glparamstate.scissor_y, glparamstate.scissor_width, glparamstate.scissor_height);
+	//else
+	//	GX_SetScissor(glparamstate.scissor_x, glparamstate.scissor_y, glparamstate.scissor_width, glparamstate.scissor_height);
 }
 
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
+	/*
 	glparamstate.scissor_x = x;
 	glparamstate.scissor_y = y;
 	glparamstate.scissor_width = width;
@@ -610,6 +611,7 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 	
 	if (glparamstate.scissoring_enabled)
 		GX_SetScissor (x,y, width, height);
+	*/
 }
 
 void glColor4ub (GLubyte r, GLubyte g, GLubyte b, GLubyte a) {

@@ -127,10 +127,18 @@ void WiiRemoteUpdate(int channel)
 		return;
 	}
 	
+	float oldX = g_remoteX;
+	float oldY = g_remoteY;
+	
 	g_bRemoteValid = true;
 	g_remoteX = ir.x;
 	g_remoteY = ir.y;
 	g_remoteAngle = ir.angle;
+	
+	// TODO this sucks
+	g_remoteX = std::min(std::max(g_remoteX * 720.0f / 640.0f, 0.0f), float(g_winVideoScreenX));
+	g_remoteY = std::min(std::max(g_remoteY * 528.0f / 480.0f, 0.0f), float(g_winVideoScreenY));
+	
 	ConvertCoordinatesIfRequired(g_remoteX, g_remoteY);
 	
 	u32 buttons = WPAD_ButtonsHeld(channel);
@@ -165,12 +173,21 @@ void WiiRemoteDraw()
 	
 	const int offsetX = 23;
 	const int offsetY = 8;
+	const float scale = 0.6f;
 	
 	float x = g_remoteX, y = g_remoteY;
 	
 	PrepareForGL();
 	g_cursorSurf.Bind();
-	g_cursorSurf.BlitRotated(x - offsetX, y - offsetY, CL_Vec2f(1, 1), ALIGNMENT_UPPER_LEFT, 0xFFFFFFFF, g_remoteAngle, CL_Vec2f(offsetX, offsetY));
+	g_cursorSurf.BlitRotated(
+		x - offsetX * scale,
+		y - offsetY * scale,
+		CL_Vec2f(scale, scale),
+		ALIGNMENT_UPPER_LEFT,
+		0xFFFFFFFF,
+		g_remoteAngle,
+		CL_Vec2f(offsetX, offsetY) * scale
+	);
 	
 	g_globalBatcher.Flush();
 }
