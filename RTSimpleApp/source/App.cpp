@@ -45,8 +45,9 @@ FileManager * GetFileManager() {return &g_fileManager;}
 #else
 
 #ifdef PLATFORM_WII
-// null audio manager for now
-AudioManager g_audioManager;
+
+#include "Audio/AudioManagerWii.h"
+AudioManagerWii g_audioManager;
 
 #elif defined RT_WEBOS || defined RTLINUX || defined PLATFORM_HTML5 || defined PLATFORM_PSP2
 #include "Audio/AudioManagerSDL.h"

@@ -60,7 +60,6 @@ set(PROTON_SOURCES_BASIC "${PROTON_SHARED}/BaseApp.cpp" "${PROTON_SHARED}/Platfo
 
 
 # WII: Include OpenGX for compilation
-
 macro(proton_wii_opengx)
 	list(APPEND PROTON_SOURCES "${PROTON_WII_OPENGX}/src/gc_gl.c" "${PROTON_WII_OPENGX}/src/image_DXT.c")
 	include_directories("${PROTON_WII_OPENGX}/include")
@@ -77,6 +76,13 @@ macro(proton_convert_dol)
 		VERBATIM
 	)
 endmacro(proton_convert_dol)
+
+# WII: Enables the project to use the Wii audio system.
+set(PROTON_AUDIO_LIBS "")
+macro(proton_use_wii_audio)
+	list(APPEND PROTON_SOURCES "${PROTON_AUDIO}/AudioManagerWii.cpp")
+	set(PROTON_AUDIO_LIBS mad asnd)
+endmacro(proton_use_wii_audio)
 
 
 
@@ -281,6 +287,6 @@ function(proton_set_sources)
     endif(PROTON_USE_SDL_AUDIO)
 
     #link required depencies.
-    target_link_libraries(${PROJECT_NAME} wiiuse bte fat ogc m)
+    target_link_libraries(${PROJECT_NAME} ${PROTON_AUDIO_LIBS} wiiuse bte fat ogc m)
 
 endfunction(proton_set_sources)

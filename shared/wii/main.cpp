@@ -1,3 +1,4 @@
+// Copyright (C) 2025 iProgramInCpp
 #include "BaseApp.h"
 
 #include <gccore.h>

@@ -37,6 +37,7 @@ project(RTSimpleApp)
 include(../../shared/wii/Proton.cmake)
 
 proton_wii_opengx()
+proton_use_wii_audio()
 proton_use_internal_zlib()
 
 proton_include_all_components()
