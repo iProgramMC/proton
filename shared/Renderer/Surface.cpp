@@ -337,6 +337,11 @@ bool Surface::LoadRTTexture(uint8 *pMem)
 			glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE );
 		}
 #endif
+#ifdef PLATFORM_WII
+	// don't generate mipmaps
+	pTexHeader->mipmapCount = 0;
+	m_mipMapCount = 0;
+#endif
 	}
 CHECK_GL_ERROR();
 	for (int nMipLevel=0; nMipLevel < pTexHeader->mipmapCount; nMipLevel++)

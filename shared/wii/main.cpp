@@ -8,6 +8,8 @@
 #include <fat.h>
 #include <network.h>
 
+#include "util/PassThroughPointerEventHandler.h"
+
 #define DEFAULT_FIFO_SIZE 256 * 1024
 
 #define HASPECT 			320
@@ -15,6 +17,14 @@
 
 int g_winVideoScreenX = 640;
 int g_winVideoScreenY = 480;
+
+extern RenderBatcher g_globalBatcher;
+
+PointerEventHandler *g_pPointerEventHandler;
+
+bool g_bRemoteValid = false;
+int g_remoteX = 0;
+int g_remoteY = 0;
 
 int GetPrimaryGLX()
 {
@@ -101,19 +111,79 @@ void CheckMessages()
 	}
 }
 
+bool g_bWasClicking = false;
+
+void WiiRemoteUpdate(int channel)
+{
+	ir_t ir {};
+	WPAD_IR(channel, &ir);
+	
+	if (!ir.valid) {
+		g_bRemoteValid = false;
+		return;
+	}
+	
+	g_bRemoteValid = true;
+	g_remoteX = ir.x;
+	g_remoteY = ir.y;
+	
+	u32 buttons = WPAD_ButtonsHeld(channel);
+	
+	if (buttons & WPAD_BUTTON_A)
+	{
+		if (g_bWasClicking) {
+			g_pPointerEventHandler->handlePointerMoveEvent(g_remoteX, g_remoteY, channel);
+		}
+		else {
+			g_pPointerEventHandler->handlePointerDownEvent(g_remoteX, g_remoteY, channel);
+			g_bWasClicking = true;
+		}
+	}
+	else
+	{
+		g_pPointerEventHandler->handlePointerUpEvent(g_remoteX, g_remoteY, channel);
+		g_bWasClicking = false;
+	}
+	
+}
+
+Surface g_cursorSurf;
+
+void WiiRemoteDraw()
+{
+	if (!g_bRemoteValid)
+		return;
+	
+	if (!g_cursorSurf.IsLoaded())
+		return;
+	
+	// TODO: The cursor texture is corrupted and I don't know why.
+	// Seems to always happen with RTSimpleApp for some reason
+	PrepareForGL();
+	g_cursorSurf.Bind();
+	g_cursorSurf.Blit(g_remoteX, g_remoteY, 0xFFFFFFFF, 0.0f, CL_Vec2f());
+	
+	g_globalBatcher.Flush();
+}
+
 int main()
 {
 	fatInitDefault();
 	InitializeVideo();
     WPAD_Init();
+	WPAD_SetDataFormat(WPAD_CHAN_0, WPAD_FMT_BTNS_ACC_IR);
 	net_init();
 	
     glClearColor(0, 0, 0, 1);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	
+	g_pPointerEventHandler = new PassThroughPointerEventHandler();
 
 	if (!GetBaseApp()->Init()) exit(0);
-
+	
+	g_cursorSurf.LoadFile("interface/checkbox.rttex");
+	
 	while (true)
 	{
 		WPAD_ScanPads();
@@ -128,6 +198,12 @@ int main()
         GetBaseApp()->Update();
 		GetBaseApp()->Draw();
 		
+		// Update Remote
+		WiiRemoteUpdate(0);
+		WiiRemoteDraw();
+		
+		glFinish();
+		
 		CheckMessages();
 
 		GX_CopyDisp(xfb, GX_TRUE);
@@ -138,6 +214,7 @@ int main()
 		
 	}
 	
+	delete g_pPointerEventHandler;
 	return 0;
 }
 
