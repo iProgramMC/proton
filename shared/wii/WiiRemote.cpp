@@ -39,8 +39,10 @@ void WiiRemote::LoadResource()
 
 void WiiRemote::Update()
 {
+	// Update Button
 	WPAD_ScanPads();
 	
+	// Update Cursor Position & Click Status
 	ir_t ir {};
 	WPAD_IR(m_channel, &ir);
 	
@@ -57,7 +59,7 @@ void WiiRemote::Update()
 	}
 	
 	float x = std::min(std::max(ir.x * 720.0f / 640.0f, 0.0f), float(GetPrimaryGLX()));
-	float y = std::min(std::max(ir.y * 528.0f / 480.0f, 0.0f), float(GetPrimaryGLY()));
+	float y = std::min(std::max(ir.y * 720.0f / 640.0f, 0.0f), float(GetPrimaryGLY()));
 	ConvertCoordinatesIfRequired(x, y);
 	
 	m_position = CL_Vec2f(x, y);
@@ -81,6 +83,32 @@ void WiiRemote::Update()
 	{
 		g_pPointerEventHandler->handlePointerUpEvent(int(x), int(y), m_channel);
 		m_bWasClicking = false;
+	}
+	
+	// Reset accessories' data.
+	//
+	// This is because they may have been unplugged.  They will be updated
+	// later if they're still plugged in.
+	m_nunchuckStickPos = CL_Vec2f();
+	
+	// Update Accessories
+	expansion_t exp;
+	WPAD_Expansion(m_channel, &exp);
+	
+	switch (exp.type)
+	{
+		case EXP_NUNCHUK:
+		{
+			// Update Nunchuk Stick
+			float ang = exp.nunchuk.js.ang * M_PI / 180, mag = exp.nunchuk.js.mag;
+			
+			// note: swapped sin/cos because ang==0 means UP, not RIGHT.
+			m_nunchuckStickPos = CL_Vec2f(
+				sin(ang) * mag,
+				cos(ang) * mag
+			);
+			break;
+		}
 	}
 }
 

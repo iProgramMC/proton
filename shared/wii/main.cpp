@@ -140,7 +140,11 @@ int main()
 	g_pPointerEventHandler = new PassThroughPointerEventHandler();
 	LoadCursorResource();
 
-	if (!GetBaseApp()->Init()) exit(0);
+	if (!GetBaseApp()->Init())
+	{
+		LogMsg("App exiting, because init failed!");
+		exit(0);
+	}
 	
 	while (true)
 	{
@@ -165,6 +169,7 @@ int main()
 	}
 	
 	delete g_pPointerEventHandler;
+	LogMsg("App exiting, because a user exit was requested!");
 	return 0;
 }
 

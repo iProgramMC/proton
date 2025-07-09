@@ -21,6 +21,8 @@ public:
 	bool IsButtonPressed(uint32 button) { return m_buttonsDown & button; }
 	bool IsButtonReleased(uint32 button) { return m_buttonsUp & button; }
 	
+	CL_Vec2f GetNunchuckStickPos() { return m_nunchuckStickPos; }
+	
 private:
 	int m_channel = 0;
 	
@@ -34,6 +36,9 @@ private:
 	uint32 m_buttonsHeld = 0;
 	uint32 m_buttonsDown = 0;
 	uint32 m_buttonsUp = 0;
+	
+	// nunchuck
+	CL_Vec2f m_nunchuckStickPos;
 };
 
 void LoadCursorResource();

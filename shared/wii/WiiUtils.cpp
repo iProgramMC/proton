@@ -16,10 +16,11 @@ ePlatformID GetPlatformID()
 }
 
 const char* GetAppName();
+const char* GetBundleName();
 
 std::string GetBaseAppPath()
 {
-	return "./" + std::string(GetAppName()) + "/"; // TODO
+	return "./" + std::string(GetBundleName()) + "/"; // TODO
 }
 
 std::string GetSavePath()

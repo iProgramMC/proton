@@ -36,8 +36,14 @@ AudioManagerOS g_audioManager;
    AudioManagerFMOD g_audioManager; //dummy with no sound
 #endif
 	
-#else
+#elif defined PLATFORM_WII
 
+#include "Audio/AudioManagerWii.h"
+#include "Gamepad/GamepadProviderWii.h"
+
+AudioManagerWii g_audioManager;
+
+#else
 
 #include "Audio/AudioManagerSDL.h"
 #include "Audio/AudioManagerAndroid.h"
@@ -135,6 +141,11 @@ bool App::Init()
 	}
 	//GetFont(FONT_SMALL)->SetSmoothing(false); //if we wanted to disable bilinear filtering on the font
 
+#ifdef PLATFORM_WII
+	// Well, crap, we'll have to crunch it down
+	SetupFakePrimaryScreenSize(1024, 768);
+#endif
+
 #ifdef _DEBUG
 	GetBaseApp()->SetFPSVisible(true);
 #endif
@@ -175,6 +186,10 @@ bool App::Init()
 	GetGamepadManager()->AddProvider(pTemp); //use XInput joysticks
 
 
+#endif
+
+#ifdef PLATFORM_WII
+	GetGamepadManager()->AddProvider(new GamepadProviderWii);
 #endif
 
 	
