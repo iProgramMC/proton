@@ -151,6 +151,7 @@ typedef struct gltexture_ {
 	char maxlevel, minlevel;
 	char onelevel;
 	unsigned char wraps, wrapt;
+	unsigned char filtmin, filtmag;
 } gltexture_;
 gltexture_ texture_list[_MAX_GL_TEX];
 
@@ -1035,6 +1036,48 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	// Initial checks
 	if (texture_list[glparamstate.glcurtex].used == 0) return;
 	if (target != GL_TEXTURE_2D) return; // FIXME Implement non 2D textures
+	
+	// IPROGRAMS FIX: if a texture is >1024x, then scale it down.
+	const int maxTextureSize = 1024;
+	if (width > maxTextureSize || height > maxTextureSize)
+	{
+		// build a sheet to resize the image in, and then call glTexImage2D with the new image data.
+		int newWidth = width, newHeight = height;
+		if (newWidth > maxTextureSize) newWidth = maxTextureSize;
+		if (newHeight > maxTextureSize) newHeight = maxTextureSize;
+		
+		// TODO: Only the following formats are supported
+		if ((internalFormat == GL_RGB || internalFormat == GL_RGBA || internalFormat == GL_RGB8 || internalFormat == GL_RGBA8) &&
+			(format == GL_RGB || format == GL_RGBA || format == GL_RGB8 || format == GL_RGBA8) &&
+			(type == GL_UNSIGNED_BYTE))
+		{
+			// we support these formats.  Now, shrink
+			int sizeofPixel = (format == GL_RGB || format == GL_RGB8) ? 3 : 4;
+			uint8_t* newData = memalign(32, newWidth * newHeight * sizeofPixel);
+			
+			uint8_t* dstData = newData;
+			for (int y = 0; y < newHeight; y++)
+			{
+				int sy = y;
+				if (newHeight != height) sy = y * height / maxTextureSize;
+				
+				for (int x = 0; x < newWidth; x++)
+				{
+					int sx = x;
+					if (newWidth != width) sx = x * width / maxTextureSize;
+					
+					const uint8_t* srcData = &((uint8_t*)data)[(sy * width + sx) * sizeofPixel];
+					memcpy(dstData, srcData, sizeofPixel);
+					dstData += sizeofPixel;
+				}
+			}
+			
+			glTexImage2D(target, level, internalFormat, newWidth, newHeight, border, format, type, newData);
+			
+			free(newData);
+			return;
+		}
+	}
 
 	GX_DrawDone(); // Very ugly, we should have a list of used textures and only wait if we are using the curr tex.
 				// This way we are sure that we are not modifying a texture which is being drawn
@@ -1212,6 +1255,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 						currtex->w,currtex->h,GX_TF_CMPR,currtex->wraps,currtex->wrapt,GX_TRUE);		
 	}
 	GX_InitTexObjLOD(&currtex->texobj,GX_LIN_MIP_LIN,GX_LIN_MIP_LIN,currtex->minlevel,currtex->maxlevel, 0,GX_ENABLE,GX_ENABLE,GX_ANISO_1);
+	GX_InitTexObjFilterMode(&currtex->texobj,GX_LINEAR,GX_LINEAR);
 }
 
 void glColorMask( GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha ) {
@@ -2042,6 +2086,16 @@ unsigned char _gcgl_texwrap_conv(GLint param) {
 	};
 }
 
+unsigned char _gcgl_texfilt_conv(GLint param) {
+	switch (param) {
+		case GL_NEAREST:
+			return GX_NEAR;
+		case GL_LINEAR:
+		default:
+			return GX_LINEAR;
+	}
+}
+
 void glTexParameteri( GLenum target, GLenum pname, GLint param ) {
 	if (target != GL_TEXTURE_2D) return;
 
@@ -2055,6 +2109,14 @@ void glTexParameteri( GLenum target, GLenum pname, GLint param ) {
 	case GL_TEXTURE_WRAP_T:
 		texture_list[glparamstate.glcurtex].wrapt = _gcgl_texwrap_conv(param);
 		GX_InitTexObjWrapMode(&currtex->texobj,currtex->wraps,currtex->wrapt);
+		break;
+	case GL_TEXTURE_MAG_FILTER:
+		currtex->filtmin = _gcgl_texfilt_conv(param);
+		GX_InitTexObjFilterMode(&currtex->texobj, currtex->filtmin, currtex->filtmag);
+		break;
+	case GL_TEXTURE_MIN_FILTER:
+		currtex->filtmag = _gcgl_texfilt_conv(param);
+		GX_InitTexObjFilterMode(&currtex->texobj, currtex->filtmin, currtex->filtmag);
 		break;
 	};
 }
