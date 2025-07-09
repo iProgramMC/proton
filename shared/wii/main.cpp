@@ -6,6 +6,7 @@
 #include <ogc/video.h>
 #include <ogc/gx.h>
 #include <fat.h>
+#include <network.h>
 
 #define DEFAULT_FIFO_SIZE 256 * 1024
 
@@ -105,6 +106,7 @@ int main()
 	fatInitDefault();
 	InitializeVideo();
     WPAD_Init();
+	net_init();
 	
     glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);

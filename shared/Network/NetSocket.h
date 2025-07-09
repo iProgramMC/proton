@@ -14,6 +14,10 @@
 #define SOCKET_ERROR (-1)
 #endif
 
+#ifdef PLATFORM_WII
+#include <network.h>
+#endif
+
 class NetSocket
 {
 public:
@@ -45,6 +49,10 @@ protected:
 	std::vector<char> m_writeBuffer;
 	unsigned int m_idleTimer, m_idleReadTimer; //time of last communication
 	bool m_bWasDisconnected;
+	
+#ifdef PLATFORM_WII
+	sockaddr_in m_clientAddress;
+#endif
 
 private:
 };

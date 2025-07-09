@@ -44,7 +44,11 @@ FileManager * GetFileManager() {return &g_fileManager;}
 	
 #else
 
-#if defined RT_WEBOS || defined RTLINUX || defined PLATFORM_HTML5 || defined PLATFORM_PSP2
+#ifdef PLATFORM_WII
+// null audio manager for now
+AudioManager g_audioManager;
+
+#elif defined RT_WEBOS || defined RTLINUX || defined PLATFORM_HTML5 || defined PLATFORM_PSP2
 #include "Audio/AudioManagerSDL.h"
 AudioManagerSDL g_audioManager; //sound in windows/WebOS/Linux/html5
 //AudioManager g_audioManager; //to disable sound

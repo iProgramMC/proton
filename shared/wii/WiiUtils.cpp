@@ -19,7 +19,7 @@ const char* GetAppName();
 
 std::string GetBaseAppPath()
 {
-	return "./"; // TODO
+	return "./" + std::string(GetAppName()) + "/"; // TODO
 }
 
 std::string GetSavePath()

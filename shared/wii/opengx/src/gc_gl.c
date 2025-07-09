@@ -94,6 +94,10 @@ typedef struct glparams_ {
 	char which_color_format;
 
 	char texture_enabled;
+	
+	char scissoring_enabled;
+	int scissor_x, scissor_y, scissor_width, scissor_height;
+	int viewport_x, viewport_y, viewport_width, viewport_height;
 
 	struct imm_mode {
 		float current_color[4];
@@ -393,6 +397,10 @@ void glEnable( GLenum cap ) {  // TODO
 		glparamstate.lighting.lights[cap-GL_LIGHT0].enabled = 1;
 		glparamstate.dirty.bits.dirty_lighting = 1;
 		break;
+	case GL_SCISSOR_TEST:
+		glparamstate.scissoring_enabled = 1;
+		GX_SetScissor(glparamstate.scissor_x, glparamstate.scissor_y, glparamstate.scissor_width, glparamstate.scissor_height);
+		break;
 	default: break;
 	}
 }
@@ -422,6 +430,10 @@ void glDisable( GLenum cap ) {  // TODO
 	case GL_LIGHT2: case GL_LIGHT3:
 		glparamstate.lighting.lights[cap-GL_LIGHT0].enabled = 0;
 		glparamstate.dirty.bits.dirty_lighting = 1;
+		break;
+	case GL_SCISSOR_TEST:
+		glparamstate.scissoring_enabled = 0;
+		GX_SetScissor(glparamstate.viewport_x, glparamstate.viewport_y, glparamstate.viewport_width, glparamstate.viewport_height);
 		break;
 	default: break;
 	}
@@ -533,7 +545,7 @@ void glBindTexture(GLenum target, GLuint texture) {
 }
 
 void glDeleteTextures( GLsizei n, const GLuint *textures) {
-	GLuint *texlist = textures;
+	const GLuint *texlist = textures;
 	GX_DrawDone();
 	while (n-- > 0) {
 		int i = *texlist++;
@@ -577,12 +589,27 @@ void glEnd() {
 }
 
 void glViewport( GLint x, GLint y, GLsizei width, GLsizei height ) {
+	glparamstate.viewport_x = x;
+	glparamstate.viewport_y = y;
+	glparamstate.viewport_width = width;
+	glparamstate.viewport_height = height;
+	
 	GX_SetViewport (x, y, width, height, 0.0f, 1.0f);
-	GX_SetScissor (x,y, width, height);
+	
+	if (glparamstate.scissoring_enabled)
+		GX_SetScissor (x,y, width, height);
+	else
+		GX_SetScissor(glparamstate.scissor_x, glparamstate.scissor_y, glparamstate.scissor_width, glparamstate.scissor_height);
 }
 
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
-	GX_SetScissor (x,y, width, height);
+	glparamstate.scissor_x = x;
+	glparamstate.scissor_y = y;
+	glparamstate.scissor_width = width;
+	glparamstate.scissor_height = height;
+	
+	if (glparamstate.scissoring_enabled)
+		GX_SetScissor (x,y, width, height);
 }
 
 void glColor4ub (GLubyte r, GLubyte g, GLubyte b, GLubyte a) {
@@ -2271,3 +2298,12 @@ void scale_internal(int components, int widthin, int heightin,const unsigned cha
 }
 
 
+// IPROGRAM: glGetBooleanv used by Proton only to check if scissoring is enabled
+// (and by Irrlicht, but we don't use Irrlicht)
+GLAPI void GLAPIENTRY glGetBooleanv( GLenum pname, GLboolean *params )
+{
+	*params = 0;
+	
+	if (pname == GL_SCISSOR_TEST)
+		*params = glparamstate.scissoring_enabled;
+}

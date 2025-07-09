@@ -2,6 +2,23 @@
 #include "NetSocket.h"
 #include "util/MiscUtils.h"
 
+#ifdef PLATFORM_WII
+
+#include <network.h>
+
+#define rt_closesocket(x) close(x)
+#define gethostbyname net_gethostbyname
+#define bind    net_bind
+#define connect net_connect
+#define socket  net_socket
+#define accept  net_accept
+#define listen  net_listen
+#define recv    net_recv
+#define send    net_send
+#define fcntl   net_fcntl
+
+#else
+
 #ifndef WINAPI
 	#include <sys/types.h> 
 	#include <sys/socket.h>
@@ -62,6 +79,7 @@
 
 	#define rt_closesocket(x) closesocket(x)
 
+#endif
 #endif
 
 NetSocket::NetSocket()
@@ -224,13 +242,16 @@ bool NetSocket::Init( string url, int port )
 		} 
 		*/
 
-#else
+#elif !defined(PLATFORM_WII)
 		fcntl (m_socket, F_SETFL, O_NONBLOCK);
 
 #endif
 
 		if (connect(m_socket, p->ai_addr, p->ai_addrlen) == -1) 
 		{
+#ifdef PLATFORM_WII
+			m_clientAddress = p->ai_addr;
+#endif
 
 			if (errno != 115 && errno != 36) //EINPROGRESS is 115 or 36, depending.   but not defined on some platforms so doing it manually
 			{
@@ -291,7 +312,7 @@ bool NetSocket::Init( string url, int port )
 	WSAAsyncSelect(m_socket, GetForegroundWindow(), WM_USER+1, FD_CONNECT); 
 	WSAAsyncSelect(m_socket, GetForegroundWindow(), WM_USER+1, FD_OOB); 
 
-#else
+#elif !defined(PLATFORM_WII)
 		fcntl (m_socket, F_SETFL, O_NONBLOCK);
 	
 #endif
@@ -362,7 +383,7 @@ bool NetSocket::InitHost( int port, int connections )
 	WSAAsyncSelect(m_socket, GetForegroundWindow(), WM_USER+1, FD_OOB); 
 
 
-#else
+#elif !defined(PLATFORM_WII)
 	//int x;
 	//x=fcntl(m_socket,F_GETFL,0);
 	//fcntl(m_socket,F_SETFL,x | O_NONBLOCK);
@@ -382,7 +403,7 @@ void NetSocket::SetSocket( int socket )
 	Kill();
 	m_socket = socket;
 	m_idleTimer = GetSystemTimeTick();
-#ifndef WINAPI
+#if !defined(WINAPI) && !defined(PLATFORM_WII)
 	fcntl(m_socket, F_SETFL, O_NONBLOCK);
 #endif
 
@@ -401,8 +422,12 @@ string NetSocket::GetClientIPAsString()
 	socklen_t addrsize = sizeof(addr);
 #endif
 
+#ifndef PLATFORM_WII
 	int result = getpeername(m_socket, (sockaddr*) &addr, &addrsize);
 	//printf("Result = %d\n", result);
+#else
+	addr = m_clientAddress;
+#endif
 	
 	char* ip = inet_ntoa(addr.sin_addr);
 	int port = addr.sin_port;

@@ -24,7 +24,7 @@ set(CMAKE_BUILD_TYPE "Debug")
 ENABLE_LANGUAGE(C)
 
 # suppress some crappy warnings
-add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
+add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS -DC_GL_MODE)
 
 set(BASE_FLAGS "-DGEKKO -mrvl -mcpu=750 -meabi -mhard-float")
 
@@ -33,17 +33,23 @@ set(CMAKE_CXX_FLAGS "${BASE_FLAGS}")
 
 add_definitions(-DRT_WII)
 
-project(RTBareBones)
+project(RTSimpleApp)
 include(../../shared/wii/Proton.cmake)
 
 proton_wii_opengx()
 proton_use_internal_zlib()
-proton_include_components(FocusInputComponent)
-proton_include_components(CustomInputComponent ArcadeInputComponent)
+
+proton_include_all_components()
+proton_use_jpeg_support()
+proton_use_linearparticles()
 
 set(APP "../source")
-proton_set_sources("${APP}/App.cpp")
+include_directories("${APP}")
+proton_set_sources("${APP}/App.cpp" "${APP}/Component/ParticleTestComponent.cpp" "${APP}/GUI/DebugMenu.cpp" "${APP}/GUI/EnterNameMenu.cpp"
+    "${APP}/GUI/MainMenu.cpp" "${APP}/GUI/ParticleTestMenu.cpp" "${APP}/GUI/AboutMenu.cpp" 
+    "${APP}/GUI/TouchTestMenu.cpp" "${APP}/Component/TouchTestComponent.cpp" 
+    "${APP}/GUI/MainMenu.cpp" "${APP}/GUI/UTF16TestMenu.cpp")
 
-target_link_libraries(RTBareBones)
+target_link_libraries(RTSimpleApp)
 
 proton_convert_dol()
