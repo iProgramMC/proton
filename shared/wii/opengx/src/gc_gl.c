@@ -87,8 +87,11 @@ typedef struct glparams_ {
 
 	void * index_array;
 	float * vertex_array, * texcoord_array, * normal_array, * color_array;
-	int vertex_stride, color_stride, index_stride, texcoord_stride, normal_stride;
+	uint8_t * color_array_u8;
+	int vertex_stride, color_stride, index_stride, texcoord_stride, normal_stride, color_u8_stride;
 	char vertex_enabled, normal_enabled, texcoord_enabled, index_enabled, color_enabled;
+	
+	char which_color_format;
 
 	char texture_enabled;
 
@@ -162,8 +165,8 @@ void scale_internal(int components, int widthin, int heightin,const unsigned cha
 
 void __draw_arrays_pos_normal_texc (float * ptr_pos, float * ptr_texc, float * ptr_normal, int count);
 void __draw_arrays_pos_normal (float * ptr_pos, float * ptr_normal, int count);
-void __draw_arrays_general (float * ptr_pos, float * ptr_normal, float * ptr_texc, float * ptr_color, int count,
-							int ne, int color_provide, int texen);
+void __draw_arrays_general (float * ptr_pos, float * ptr_normal, float * ptr_texc, float * ptr_color, uint8_t * ptr_color_u8,
+							int count,int ne, int color_provide, int texen, char has8bitcolor);
 
 
 
@@ -1200,10 +1203,10 @@ void glDisableClientState( GLenum cap ) {
 	case GL_NORMAL_ARRAY:         glparamstate.normal_enabled = 0; break;
 	case GL_TEXTURE_COORD_ARRAY:  glparamstate.texcoord_enabled = 0; break;
 	case GL_VERTEX_ARRAY:         glparamstate.vertex_enabled = 0; break;
+	case GL_COLOR_ARRAY:          glparamstate.color_enabled = 0; break;
 	case GL_EDGE_FLAG_ARRAY:
 	case GL_FOG_COORD_ARRAY:
 	case GL_SECONDARY_COLOR_ARRAY:
-	case GL_COLOR_ARRAY:
 		return;
 	}
 }
@@ -1213,33 +1216,45 @@ void glEnableClientState( GLenum cap ) {
 	case GL_NORMAL_ARRAY:         glparamstate.normal_enabled = 1; break;
 	case GL_TEXTURE_COORD_ARRAY:  glparamstate.texcoord_enabled = 1; break;
 	case GL_VERTEX_ARRAY:         glparamstate.vertex_enabled = 1; break;
+	case GL_COLOR_ARRAY:          glparamstate.color_enabled = 1; break;
 	case GL_EDGE_FLAG_ARRAY:
 	case GL_FOG_COORD_ARRAY:
 	case GL_SECONDARY_COLOR_ARRAY:
-	case GL_COLOR_ARRAY:
 		return;
 	}
 }
 
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid * pointer) {
 	glparamstate.vertex_array = (float*)pointer;
-	glparamstate.vertex_stride = stride;
+	glparamstate.vertex_stride = stride / sizeof(float);
 	if (stride == 0) glparamstate.vertex_stride = size;
 }
 void glNormalPointer(GLenum type, GLsizei stride, const GLvoid * pointer) {
 	glparamstate.normal_array = (float*)pointer;
-	glparamstate.normal_stride = stride;
+	glparamstate.normal_stride = stride / sizeof(float);
 	if (stride == 0) glparamstate.normal_stride = 3;
 }
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid * pointer) {
 	glparamstate.texcoord_array = (float*)pointer;
-	glparamstate.texcoord_stride = stride;
+	glparamstate.texcoord_stride = stride / sizeof(float);
 	if (stride == 0) glparamstate.texcoord_stride = size;
 }
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid * pointer) {
 	glparamstate.color_array = (float*)pointer;
-	glparamstate.color_stride = stride;
-	if (stride == 0) glparamstate.color_stride = size;
+	glparamstate.color_array_u8 = (uint8_t*)pointer;
+	
+	glparamstate.color_stride = stride / sizeof(float);
+	glparamstate.color_u8_stride = stride;
+	
+	if (type == GL_UNSIGNED_BYTE)
+		glparamstate.which_color_format = 1;
+	else
+		glparamstate.which_color_format = 0;
+	
+	if (stride == 0) {
+		glparamstate.color_stride = size;
+		glparamstate.color_u8_stride = size;
+	}
 }
 
 void glInterleavedArrays( GLenum format, GLsizei stride, const GLvoid *pointer ) {
@@ -1628,11 +1643,13 @@ void glDrawArrays( GLenum mode, GLint first, GLsizei count ) {
 	float * ptr_texc = glparamstate.texcoord_array;
 	float * ptr_color = glparamstate.color_array;
 	float * ptr_normal = glparamstate.normal_array;
+	uint8_t* ptr_color_u8 = glparamstate.color_array_u8;
 
 	ptr_pos += (glparamstate.vertex_stride*first);
 	ptr_texc += (glparamstate.texcoord_stride*first);
 	ptr_color += (glparamstate.color_stride*first);
 	ptr_normal += (glparamstate.normal_stride*first);
+	ptr_color_u8 += (glparamstate.color_u8_stride*first);
 
 	__setup_render_stages(texen);
 
@@ -1683,7 +1700,8 @@ void glDrawArrays( GLenum mode, GLint first, GLsizei count ) {
 			__draw_arrays_pos_normal(ptr_pos, ptr_normal, count);
 		}
 	}else{
-		__draw_arrays_general(ptr_pos, ptr_normal, ptr_texc, ptr_color, count, glparamstate.normal_enabled, color_provide, texen);
+		__draw_arrays_general(ptr_pos, ptr_normal, ptr_texc, ptr_color, ptr_color_u8, count,
+		                      glparamstate.normal_enabled, color_provide, texen, glparamstate.which_color_format);
 	}
 	GX_End();
 
@@ -1754,6 +1772,7 @@ void glDrawElements( GLenum mode, GLsizei count, GLenum type, const GLvoid *indi
 		float * ptr_texc = glparamstate.texcoord_array + glparamstate.texcoord_stride*index;
 		float * ptr_color = glparamstate.color_array + glparamstate.color_stride*index;
 		float * ptr_normal = glparamstate.normal_array + glparamstate.normal_stride*index;
+		uint8_t* ptr_color_u8 = glparamstate.color_array_u8 + glparamstate.color_u8_stride*index;
 
 		GX_Position3f32(ptr_pos[0],ptr_pos[1],ptr_pos[2]);
 
@@ -1764,7 +1783,19 @@ void glDrawElements( GLenum mode, GLsizei count, GLenum type, const GLvoid *indi
 		// If the data stream doesn't contain any color data just
 		// send the current color (the last glColor* call)
 		if (color_provide) {
-			unsigned char arr[4] = {ptr_color[0]*255.0f,ptr_color[1]*255.0f,ptr_color[2]*255.0f,ptr_color[3]*255.0f};
+			unsigned char arr[4];
+			if (glparamstate.which_color_format) {
+				arr[0] = ptr_color_u8[0];
+				arr[1] = ptr_color_u8[1];
+				arr[2] = ptr_color_u8[2];
+				arr[3] = ptr_color_u8[3];
+			}
+			else {
+				arr[0] = ptr_color[0]*255.0f;
+				arr[1] = ptr_color[1]*255.0f;
+				arr[2] = ptr_color[2]*255.0f;
+				arr[3] = ptr_color[3]*255.0f;
+			}
 			GX_Color4u8(arr[0],arr[1],arr[2],arr[3]);
 			if (color_provide == 2)
 				GX_Color4u8(arr[0],arr[1],arr[2],arr[3]);
@@ -1803,8 +1834,8 @@ void __draw_arrays_pos_normal (float * ptr_pos, float * ptr_normal, int count) {
 		ptr_normal += glparamstate.normal_stride;
 	}
 }
-void __draw_arrays_general (float * ptr_pos, float * ptr_normal, float * ptr_texc, float * ptr_color, int count,
-							int ne, int color_provide, int texen) {
+void __draw_arrays_general (float * ptr_pos, float * ptr_normal, float * ptr_texc, float * ptr_color, uint8_t * ptr_color_u8,
+							int count,int ne, int color_provide, int texen, char has8bitcolor) {
 
 	int i;
 	for (i = 0; i < count; i++) {
@@ -1819,9 +1850,22 @@ void __draw_arrays_general (float * ptr_pos, float * ptr_normal, float * ptr_tex
 		// If the data stream doesn't contain any color data just
 		// send the current color (the last glColor* call)
 		if (color_provide) {
-			unsigned char arr[4] = {ptr_color[0]*255.0f,ptr_color[1]*255.0f,ptr_color[2]*255.0f,ptr_color[3]*255.0f};
+			unsigned char arr[4];
+			if (has8bitcolor) {
+				arr[0] = ptr_color_u8[0];
+				arr[1] = ptr_color_u8[1];
+				arr[2] = ptr_color_u8[2];
+				arr[3] = ptr_color_u8[3];
+			}
+			else {
+				arr[0] = ptr_color[0]*255.0f;
+				arr[1] = ptr_color[1]*255.0f;
+				arr[2] = ptr_color[2]*255.0f;
+				arr[3] = ptr_color[3]*255.0f;
+			}
 			GX_Color4u8(arr[0],arr[1],arr[2],arr[3]);
 			ptr_color += glparamstate.color_stride;
+			ptr_color_u8 += glparamstate.color_u8_stride;
 			if (color_provide == 2)
 				GX_Color4u8(arr[0],arr[1],arr[2],arr[3]);
 		}
