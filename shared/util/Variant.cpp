@@ -541,6 +541,7 @@ bool VariantList::SerializeFromMem(uint8 *pSrc, int bufferSize, int *pBytesReadO
 			{
 				uint32 strLen;
 				memcpy(&strLen, pSrc, 4); pSrc += 4;
+				FIXUPV(strLen);
 				
 				string v;
 				v.resize(strLen );

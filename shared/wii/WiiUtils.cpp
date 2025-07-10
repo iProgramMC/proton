@@ -33,7 +33,7 @@ std::string g_CachePath;
 std::string GetAppCachePath()
 {
 	if (g_CachePath.empty())
-		g_CachePath = GetBaseAppPath() + "cache";
+		g_CachePath = GetBaseAppPath() + "cache/";
 	
 	return g_CachePath;
 }
@@ -50,7 +50,7 @@ void CreateAppCacheDirIfNeeded()
 	if (g_CachePath != "")
 		path = g_CachePath;
 	else
-		path = GetBaseAppPath() + "cache";
+		path = GetBaseAppPath() + "cache/";
 
 	mkdir(path.c_str(), 0777);
 }

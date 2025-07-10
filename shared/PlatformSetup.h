@@ -91,21 +91,27 @@ static inline void swapBytes(char* data, size_t sz)
     swapBytes((uint8_t*) data, sz);
 }
 
+#if __cplusplus > 201700
+#define __CONSTEXPR_COND constexpr
+#else
+#define __CONSTEXPR_COND
+#endif
+
 template<typename T>
 __attribute__((noinline))
 T byteSwap(const T& t)
 {
-    if constexpr (sizeof(t) == 1)
+    if __CONSTEXPR_COND (sizeof(t) == 1)
     {
         return t;
     }
-    else if constexpr (sizeof(t) == 2)
+    else if __CONSTEXPR_COND (sizeof(t) == 2)
     {
         uint16_t x = customReinterpretCast<uint16_t, T>(t);
         x = (x >> 8) | (x << 8);
         return customReinterpretCast<T, uint16_t>(x);
     }
-    else if constexpr (sizeof(t) == 4)
+    else if __CONSTEXPR_COND (sizeof(t) == 4)
     {
         uint32_t x = customReinterpretCast<uint32_t, T>(t);
         x = (x >> 24) |
@@ -114,7 +120,7 @@ T byteSwap(const T& t)
             ((x >> 8) & 0x0000FF00);
         return customReinterpretCast<T, uint32_t>(x);
     }
-    else if constexpr (sizeof(t) == 8)
+    else if __CONSTEXPR_COND (sizeof(t) == 8)
     {
         uint64_t x = customReinterpretCast<uint64_t, T>(t);
         x = (x >> 56) |
